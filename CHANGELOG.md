@@ -1,6 +1,10 @@
 # Changelog
 
-## v0.1.0 (unreleased)
+## v0.1.1
+
+- Pin `cache/nats` and `cache/pg` on `cache v0.1.0` for consumers outside this repo.
+
+## v0.1.0
 
 Initial release.
 

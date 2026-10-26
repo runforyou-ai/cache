@@ -5,7 +5,7 @@ go 1.27.0
 require (
 	github.com/nats-io/nats-server/v2 v2.15.1
 	github.com/nats-io/nats.go v1.54.0
-	github.com/runforyou-ai/cache v0.0.0
+	github.com/runforyou-ai/cache v0.1.0
 )
 
 require (
