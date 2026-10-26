@@ -28,7 +28,7 @@ jobs:
     env:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
         with:
           go-version-file: ${{ matrix.module }}/go.mod
@@ -44,7 +44,7 @@ jobs:
       matrix:
         module: [".", "nats", "pg"]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
         with:
           go-version-file: ${{ matrix.module }}/go.mod
