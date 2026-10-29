@@ -24,7 +24,7 @@ type DB interface {
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 }
 
-// Store implements [cache.Store] and [cache.Vacuum].
+// Store implements [cache.Store], [cache.Counter] and [cache.Vacuum].
 type Store struct {
 	db           DB
 	table        string
@@ -116,6 +116,55 @@ func (s *Store) Delete(ctx context.Context, key string) error {
 		return fmt.Errorf("pg cache delete %q: %w", key, err)
 	}
 	return nil
+}
+
+// Incr implements [cache.Counter].
+func (s *Store) Incr(ctx context.Context, key string, delta int64, ttl time.Duration) (int64, error) {
+	var expires any
+	refreshTTL := ttl > 0
+	if refreshTTL {
+		expires = time.Now().Add(ttl)
+	}
+	// $1 key, $2 delta, $3 expires (null when not refreshing), $4 refreshTTL
+	var n int64
+	err := s.db.QueryRow(ctx, `
+INSERT INTO `+s.quotedTable()+` (key, value, expires_at)
+VALUES (
+	$1,
+	convert_to(($2::bigint)::text, 'UTF8'),
+	$3
+)
+ON CONFLICT (key) DO UPDATE SET
+	value = convert_to((
+		CASE
+			WHEN `+s.quotedTable()+`.expires_at IS NOT NULL
+				AND `+s.quotedTable()+`.expires_at <= now()
+			THEN $2::bigint
+			ELSE convert_from(`+s.quotedTable()+`.value, 'UTF8')::bigint + $2::bigint
+		END
+	)::text, 'UTF8'),
+	expires_at = CASE
+		WHEN $4::boolean THEN $3
+		WHEN `+s.quotedTable()+`.expires_at IS NOT NULL
+			AND `+s.quotedTable()+`.expires_at <= now()
+		THEN NULL
+		ELSE `+s.quotedTable()+`.expires_at
+	END
+RETURNING convert_from(value, 'UTF8')::bigint
+`, key, delta, expires, refreshTTL).Scan(&n)
+	if err != nil {
+		if isInvalidText(err) {
+			return 0, cache.ErrNotCounter
+		}
+		return 0, fmt.Errorf("pg cache incr %q: %w", key, err)
+	}
+	s.maybeGC(ctx)
+	return n, nil
+}
+
+func isInvalidText(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "22P02"
 }
 
 // Vacuum deletes expired rows.

@@ -64,6 +64,17 @@ func (c *Cache) Delete(ctx context.Context, key string) error {
 	return c.store.Delete(ctx, key)
 }
 
+// Incr atomically adds delta to a counter key. The underlying store must
+// implement [Counter]; otherwise [ErrNotSupported] is returned. ttl is
+// resolved like [Cache.Set].
+func (c *Cache) Incr(ctx context.Context, key string, delta int64, ttl time.Duration) (int64, error) {
+	ctr, ok := c.store.(Counter)
+	if !ok {
+		return 0, ErrNotSupported
+	}
+	return ctr.Incr(ctx, key, delta, c.resolveTTL(ttl))
+}
+
 // GetOrSet returns the cached value for key, or runs fn, stores its
 // result with ttl, and returns it. A concurrent miss may run fn more
 // than once; stampede control is left to the caller for now.

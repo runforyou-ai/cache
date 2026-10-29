@@ -72,3 +72,42 @@ func TestNull(t *testing.T) {
 		t.Fatalf("got %v, want miss", err)
 	}
 }
+
+func TestCacheIncr(t *testing.T) {
+	t.Parallel()
+	store := memory.New()
+	t.Cleanup(store.Close)
+	c := cache.New(store, cache.WithPrefix("app:"))
+	n, err := c.Incr(t.Context(), "n", 1, cache.NoExpiration)
+	if err != nil || n != 1 {
+		t.Fatalf("n=%d err=%v", n, err)
+	}
+	raw, err := store.Get(t.Context(), "app:n")
+	if err != nil || string(raw) != "1" {
+		t.Fatalf("prefixed get %q err=%v", raw, err)
+	}
+}
+
+func TestCacheIncrUnsupported(t *testing.T) {
+	t.Parallel()
+	c := cache.New(cache.NewNull())
+	_, err := c.Incr(t.Context(), "n", 1, cache.NoExpiration)
+	if !errors.Is(err, cache.ErrNotSupported) {
+		t.Fatalf("got %v, want ErrNotSupported", err)
+	}
+}
+
+func TestParseCounter(t *testing.T) {
+	t.Parallel()
+	n, err := cache.ParseCounter([]byte("42"))
+	if err != nil || n != 42 {
+		t.Fatalf("n=%d err=%v", n, err)
+	}
+	_, err = cache.ParseCounter([]byte("x"))
+	if !errors.Is(err, cache.ErrNotCounter) {
+		t.Fatalf("got %v, want ErrNotCounter", err)
+	}
+	if string(cache.FormatCounter(-3)) != "-3" {
+		t.Fatal(cache.FormatCounter(-3))
+	}
+}

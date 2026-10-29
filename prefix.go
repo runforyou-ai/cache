@@ -26,3 +26,13 @@ func (p Prefixed) Set(ctx context.Context, key string, value []byte, ttl time.Du
 func (p Prefixed) Delete(ctx context.Context, key string) error {
 	return p.Store.Delete(ctx, p.Prefix+key)
 }
+
+// Incr implements [Counter] by forwarding to the inner store when it
+// supports [Counter]; otherwise it returns [ErrNotSupported].
+func (p Prefixed) Incr(ctx context.Context, key string, delta int64, ttl time.Duration) (int64, error) {
+	c, ok := p.Store.(Counter)
+	if !ok {
+		return 0, ErrNotSupported
+	}
+	return c.Incr(ctx, p.Prefix+key, delta, ttl)
+}

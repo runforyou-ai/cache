@@ -10,7 +10,8 @@ import (
 	"github.com/runforyou-ai/cache"
 )
 
-// Store keeps values in memory. It is safe for concurrent use.
+// Store keeps values in memory. It implements [cache.Store] and
+// [cache.Counter]. It is safe for concurrent use.
 type Store struct {
 	mu      sync.RWMutex
 	items   map[string]item
@@ -86,6 +87,32 @@ func (s *Store) Delete(_ context.Context, key string) error {
 	delete(s.items, key)
 	s.mu.Unlock()
 	return nil
+}
+
+// Incr implements [cache.Counter].
+func (s *Store) Incr(_ context.Context, key string, delta int64, ttl time.Duration) (int64, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var n int64
+	if it, ok := s.items[key]; ok && !expired(it.exp) {
+		cur, err := cache.ParseCounter(it.value)
+		if err != nil {
+			return 0, err
+		}
+		n = cur + delta
+	} else {
+		n = delta
+	}
+
+	it := item{value: cache.FormatCounter(n)}
+	if ttl > 0 {
+		it.exp = time.Now().Add(ttl)
+	} else if cur, ok := s.items[key]; ok && !expired(cur.exp) {
+		it.exp = cur.exp
+	}
+	s.items[key] = it
+	return n, nil
 }
 
 // Close stops the optional janitor. It is safe to call more than once.

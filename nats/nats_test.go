@@ -17,7 +17,7 @@ func TestConformance(t *testing.T) {
 	t.Parallel()
 	storetest.Run(t, func(t *testing.T) cache.Store {
 		return newTestStore(t)
-	}, storetest.Options{SupportsTTL: false})
+	}, storetest.Options{SupportsTTL: false, SupportsCounter: true})
 }
 
 func newTestStore(t *testing.T) *natscache.Store {

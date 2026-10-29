@@ -15,7 +15,7 @@ func TestConformance(t *testing.T) {
 		s := memory.New()
 		t.Cleanup(s.Close)
 		return s
-	}, storetest.Options{SupportsTTL: true})
+	}, storetest.Options{SupportsTTL: true, SupportsCounter: true})
 }
 
 func TestJanitor(t *testing.T) {

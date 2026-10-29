@@ -10,5 +10,6 @@
 //
 // [Cache] wraps a Store with a default TTL, optional key prefix and
 // GetOrSet. Business code that only needs raw bytes can use a Store
-// directly. [storetest] checks the driver contract.
+// directly. Optional [Counter] adds atomic integer Incr (same detection
+// pattern as [Vacuum]). [storetest] checks the driver contract.
 package cache

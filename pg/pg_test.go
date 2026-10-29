@@ -35,7 +35,7 @@ CREATE UNLOGGED TABLE "` + table + `" (
 			_, _ = pool.Exec(context.Background(), `DROP TABLE IF EXISTS "`+table+`"`)
 		})
 		return pg.Open(pool, pg.WithTable(table), pg.WithGCProbability(0))
-	}, storetest.Options{SupportsTTL: true, TTLSkew: 100 * time.Millisecond})
+	}, storetest.Options{SupportsTTL: true, SupportsCounter: true, TTLSkew: 100 * time.Millisecond})
 }
 
 func TestSchemaConstant(t *testing.T) {
